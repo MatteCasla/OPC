@@ -44,19 +44,34 @@ actualizar_labels_recursos()
 
 RUTA_BASE = os.path.join(os.path.expanduser("~"), "Desktop", "OPC")
 RUTA_LOGS = os.path.join(RUTA_BASE, "LOGS")
+RUTA_PROCESOS = os.path.join(RUTA_LOGS, 'LOGS PROCESOS')
 RUTA_TEMP = tempfile.gettempdir()
 
+# Historial de actividad.
+
+def loggear_actividad(origen, actividad):
+    momento_actividad = []
+    hora_log = datetime.now().strftime("%H:%M:%S")
+    entrada = f'{hora_log} | ({origen}) -> {actividad}'
+    momento_actividad.append(entrada)
+    nombre_archivo="historial.log"
+    ruta_archivo = os.path.join(RUTA_LOGS, nombre_archivo)
+    os.makedirs(RUTA_LOGS, exist_ok=True)
+    with open(ruta_archivo, "a") as f:
+        for entrada in momento_actividad:
+            f.write(entrada + "\n")
 
 # GENERACION DE LOGS Y SU CLASIFICACION.
 
 def logeo_procesos():
+    momento = loggear_actividad('Usuario', 'Logeo de procesos')
     procesos = []
     momento = datetime.now()
     timestamp = momento.strftime("%Y-%m-%d_%H-%M-%S")
     log_procesos = f'Procesos_{timestamp}.txt'
 
-    ruta_archivo = os.path.join(RUTA_LOGS, log_procesos)
-    os.makedirs(RUTA_LOGS, exist_ok=True)
+    ruta_archivo = os.path.join(RUTA_PROCESOS, log_procesos)
+    os.makedirs(RUTA_PROCESOS, exist_ok=True)
 
     with open(ruta_archivo, 'w', encoding='utf-8') as f:
         for p in psutil.process_iter():
