@@ -9,7 +9,7 @@ import time
 import threading
 import shutil
 import subprocess
-
+import psutil
 
 class OPCAplicacion:
     def __init__(self):
@@ -42,4 +42,41 @@ def actualizar_labels_recursos():
     opc.root.after(1000, actualizar_labels_recursos)
 actualizar_labels_recursos()
 
+RUTA_BASE = os.path.join(os.path.expanduser("~"), "Desktop", "OPC")
+RUTA_LOGS = os.path.join(RUTA_BASE, "LOGS")
+RUTA_TEMP = tempfile.gettempdir()
+
+
+# GENERACION DE LOGS Y SU CLASIFICACION.
+
+def logeo_procesos():
+    procesos = []
+    momento = datetime.now()
+    timestamp = momento.strftime("%Y-%m-%d_%H-%M-%S")
+    log_procesos = f'Procesos_{timestamp}.txt'
+
+    ruta_archivo = os.path.join(RUTA_LOGS, log_procesos)
+    os.makedirs(RUTA_LOGS, exist_ok=True)
+
+    with open(ruta_archivo, 'w', encoding='utf-8') as f:
+        for p in psutil.process_iter():
+            try:
+                p.cpu_percent(interval=None)  
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+        for p in psutil.process_iter(['pid', 'name', 'memory_percent', 'cpu_percent']):
+            try:
+                name = p.info['name']
+                if name != "System Idle Process":
+                    procesos.append(p.info)
+            except Exception as e:
+                print('Error', e)
+
+        procesos.sort(key=lambda p: p['cpu_percent'], reverse=True)
+        for p in procesos:
+            f.write(f"PID: {p['pid']:<8} | Name: {p['name'][:29]:<30} | CPU: {p['cpu_percent'] / psutil.cpu_count():<10.2f}% | RAM: {p['memory_percent']:<10.2f}%\n")
+def generar_log_procesos_thread():
+    threading.Thread(target=logeo_procesos, daemon=True).start()
+
+ttk.Button(opc.gui.frame_logs, text='Generar log', command=generar_log_procesos_thread, style='OPC.TButton').pack()
 opc.run() 
