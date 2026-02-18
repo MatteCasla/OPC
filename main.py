@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from grafico import OPCGUI, opc_askyesno, opc_showinfo
-from monitoreo import Monitoreo
+from monitoreo import Monitoreo, Procesos
 import os
 import tempfile
 from datetime import datetime
@@ -92,6 +92,29 @@ def logeo_procesos():
             f.write(f"PID: {p['pid']:<8} | Name: {p['name'][:29]:<30} | CPU: {p['cpu_percent'] / psutil.cpu_count():<10.2f}% | RAM: {p['memory_percent']:<10.2f}%\n")
 def generar_log_procesos_thread():
     threading.Thread(target=logeo_procesos, daemon=True).start()
-
 ttk.Button(opc.gui.frame_logs, text='Generar log', command=generar_log_procesos_thread, style='OPC.TButton').pack()
+
+# Clasificacion de procesos.
+
+def clasificar_procesos(intervalo=300):
+    while True:
+        procesos_cat_alta = []
+        procesos_cat_media = []
+        for clasificacion_procesos in Procesos.obtener_procesos(['pid', 'name', 'memory_percent', 'cpu_percent']):
+            try:
+                if Monitoreo.obtener_cpu() >= 80 and Monitoreo.obtener_ram() >= 80:
+                    procesos_cat_alta.append((clasificacion_procesos['pid'], clasificacion_procesos['name']))
+                elif Monitoreo.obtener_cpu() >= 30 and Monitoreo.obtener_ram() >= 30:
+                    procesos_cat_media.append((clasificacion_procesos['pid'], clasificacion_procesos['name']))
+            except Exception as e:
+                print('Error', e)
+        nombre_archivo = "Clasificacion_procesos.log"
+        with open(nombre_archivo, "a", encoding="utf-8") as f:
+            f.write(f"{datetime.now().strftime("%Y-%m-%d %H-%M-%S")} | Alta: {procesos_cat_alta} | Media: {procesos_cat_media}\n")
+        time.sleep(intervalo)
+
+def actualizar_clasificacion_procesos():
+    hilo = threading.Thread(target=clasificar_procesos, daemon=True)
+    hilo.start()
+actualizar_clasificacion_procesos()
 opc.run() 
