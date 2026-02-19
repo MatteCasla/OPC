@@ -24,6 +24,17 @@ opc = OPCAplicacion()
 BG = "#1e1e1e"
 FG = "#e6e6e6"
 
+# DATOS GENERALES 
+
+RUTA_BASE = os.path.join(os.path.expanduser("~"), "Desktop", "OPC")
+RUTA_LOGS = os.path.join(RUTA_BASE, "LOGS")
+RUTA_PROCESOS = os.path.join(RUTA_LOGS, 'LOGS PROCESOS')
+RUTA_TEMP = tempfile.gettempdir()
+
+cpu = Monitoreo.obtener_cpu()
+ram = Monitoreo.obtener_ram()
+
+
 # MONITOREO (LABELS Y ACTUALIZACIONES DE DATOS)
 
 label_cpu_percent = ttk.Label(opc.gui.frame_monitor, text='CPU: --%' ,style='OPC.TLabel')
@@ -41,11 +52,6 @@ def actualizar_labels_recursos():
     label_disc_percent.config(text=f'DISC: {Monitoreo.obtener_disc()}%', foreground='#ffa500' if Monitoreo.obtener_disc()>65 else FG)
     opc.root.after(1000, actualizar_labels_recursos)
 actualizar_labels_recursos()
-
-RUTA_BASE = os.path.join(os.path.expanduser("~"), "Desktop", "OPC")
-RUTA_LOGS = os.path.join(RUTA_BASE, "LOGS")
-RUTA_PROCESOS = os.path.join(RUTA_LOGS, 'LOGS PROCESOS')
-RUTA_TEMP = tempfile.gettempdir()
 
 # Historial de actividad.
 
@@ -102,19 +108,29 @@ def clasificar_procesos(intervalo=300):
         procesos_cat_media = []
         for clasificacion_procesos in Procesos.obtener_procesos(['pid', 'name', 'memory_percent', 'cpu_percent']):
             try:
-                if Monitoreo.obtener_cpu() >= 80 and Monitoreo.obtener_ram() >= 80:
+                cpu_p = clasificacion_procesos['cpu_percent']
+                ram_p = clasificacion_procesos['memory_percent']
+                score_p = cpu_p * 0.7 + ram_p * 0.3
+
+                if score_p >= 25:
                     procesos_cat_alta.append((clasificacion_procesos['pid'], clasificacion_procesos['name']))
-                elif Monitoreo.obtener_cpu() >= 30 and Monitoreo.obtener_ram() >= 30:
+                elif score_p >= 10: 
                     procesos_cat_media.append((clasificacion_procesos['pid'], clasificacion_procesos['name']))
+
             except Exception as e:
                 print('Error', e)
         nombre_archivo = "Clasificacion_procesos.log"
         with open(nombre_archivo, "a", encoding="utf-8") as f:
-            f.write(f"{datetime.now().strftime("%Y-%m-%d %H-%M-%S")} | Alta: {procesos_cat_alta} | Media: {procesos_cat_media}\n")
+            f.write(f"{datetime.now().strftime('%Y-%m-%d %H-%M-%S')} | Alta: {procesos_cat_alta} | Media: {procesos_cat_media}\n")
         time.sleep(intervalo)
 
 def actualizar_clasificacion_procesos():
     hilo = threading.Thread(target=clasificar_procesos, daemon=True)
     hilo.start()
 actualizar_clasificacion_procesos()
+
+def abrir_archivo_clasificacion_procesos():
+    os.startfile('Clasificacion_procesos.log')
+ttk.Button(opc.gui.frame_monitor, text='Abrir clasificacion de procesos', command=abrir_archivo_clasificacion_procesos, style='OPC.TButton').pack()
+
 opc.run() 
