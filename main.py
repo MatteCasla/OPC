@@ -29,6 +29,8 @@ FG = "#e6e6e6"
 RUTA_BASE = os.path.join(os.path.expanduser("~"), "Desktop", "OPC")
 RUTA_LOGS = os.path.join(RUTA_BASE, "LOGS")
 RUTA_PROCESOS = os.path.join(RUTA_LOGS, 'LOGS PROCESOS')
+RUTA_HISTORIAL = os.path.join(RUTA_LOGS, 'HISTORIAL')
+RUTA_CLASIFICACION_PROCESOS = os.path.join(RUTA_LOGS, 'CLASIFICACION PROCESOS')
 RUTA_TEMP = tempfile.gettempdir()
 
 cpu = Monitoreo.obtener_cpu()
@@ -61,8 +63,8 @@ def loggear_actividad(origen, actividad):
     entrada = f'{hora_log} | ({origen}) -> {actividad}'
     momento_actividad.append(entrada)
     nombre_archivo="historial.log"
-    ruta_archivo = os.path.join(RUTA_LOGS, nombre_archivo)
-    os.makedirs(RUTA_LOGS, exist_ok=True)
+    ruta_archivo = os.path.join(RUTA_HISTORIAL, nombre_archivo)
+    os.makedirs(RUTA_HISTORIAL, exist_ok=True)
     with open(ruta_archivo, "a") as f:
         for entrada in momento_actividad:
             f.write(entrada + "\n")
@@ -70,7 +72,7 @@ def loggear_actividad(origen, actividad):
 # GENERACION DE LOGS Y SU CLASIFICACION.
 
 def logeo_procesos():
-    momento = loggear_actividad('Usuario', 'Logeo de procesos')
+    loggear_actividad('Usuario', 'Logeo de procesos')
     procesos = []
     momento = datetime.now()
     timestamp = momento.strftime("%Y-%m-%d_%H-%M-%S")
@@ -85,13 +87,14 @@ def logeo_procesos():
                 p.cpu_percent(interval=None)  
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 pass
+        time.sleep(0.5)
         for p in psutil.process_iter(['pid', 'name', 'memory_percent', 'cpu_percent']):
             try:
                 name = p.info['name']
                 if name != "System Idle Process":
                     procesos.append(p.info)
-            except Exception as e:
-                print('Error', e)
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
 
         procesos.sort(key=lambda p: p['cpu_percent'], reverse=True)
         for p in procesos:
@@ -120,7 +123,9 @@ def clasificar_procesos(intervalo=300):
             except Exception as e:
                 print('Error', e)
         nombre_archivo = "Clasificacion_procesos.log"
-        with open(nombre_archivo, "a", encoding="utf-8") as f:
+        ruta_archivo = os.path.join(RUTA_CLASIFICACION_PROCESOS, nombre_archivo)
+        os.makedirs(RUTA_CLASIFICACION_PROCESOS, exist_ok=True)
+        with open(ruta_archivo, "a", encoding="utf-8") as f:
             f.write(f"{datetime.now().strftime('%Y-%m-%d %H-%M-%S')} | Alta: {procesos_cat_alta} | Media: {procesos_cat_media}\n")
         time.sleep(intervalo)
 
@@ -130,7 +135,10 @@ def actualizar_clasificacion_procesos():
 actualizar_clasificacion_procesos()
 
 def abrir_archivo_clasificacion_procesos():
-    os.startfile('Clasificacion_procesos.log')
+    loggear_actividad('Usuario', 'Abrio archivo de clasificacion de procesos')
+    nombre_archivo = 'Clasificacion_procesos.log'
+    ruta_archivo_clasificacion = os.path.join(RUTA_CLASIFICACION_PROCESOS, nombre_archivo)
+    os.startfile(ruta_archivo_clasificacion)
 ttk.Button(opc.gui.frame_monitor, text='Abrir clasificacion de procesos', command=abrir_archivo_clasificacion_procesos, style='OPC.TButton').pack()
 
 opc.run() 
