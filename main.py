@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
 from grafico import OPCGUI, opc_askyesno, opc_showinfo
-from monitoreo import Monitoreo, Procesos
+from monitoreo import Monitoreo
+from procesos import Procesos
 import os
 import tempfile
 from datetime import datetime
@@ -32,7 +33,6 @@ RUTA_PROCESOS = os.path.join(RUTA_LOGS, 'LOGS PROCESOS')
 RUTA_HISTORIAL = os.path.join(RUTA_LOGS, 'HISTORIAL')
 RUTA_CLASIFICACION_PROCESOS = os.path.join(RUTA_LOGS, 'CLASIFICACION PROCESOS')
 RUTA_TEMP = tempfile.gettempdir()
-
 cpu = Monitoreo.obtener_cpu()
 ram = Monitoreo.obtener_ram()
 
@@ -101,6 +101,7 @@ def logeo_procesos():
             f.write(f"PID: {p['pid']:<8} | Name: {p['name'][:29]:<30} | CPU: {p['cpu_percent'] / psutil.cpu_count():<10.2f}% | RAM: {p['memory_percent']:<10.2f}%\n")
 def generar_log_procesos_thread():
     threading.Thread(target=logeo_procesos, daemon=True).start()
+ttk.Label(opc.gui.frame_logs, text='Log de procesos', style='OPC.TLabel').pack()
 ttk.Button(opc.gui.frame_logs, text='Generar log', command=generar_log_procesos_thread, style='OPC.TButton').pack()
 
 # Clasificacion de procesos.
@@ -120,8 +121,8 @@ def clasificar_procesos(intervalo=300):
                 elif score_p >= 10: 
                     procesos_cat_media.append((clasificacion_procesos['pid'], clasificacion_procesos['name']))
 
-            except Exception as e:
-                print('Error', e)
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
         nombre_archivo = "Clasificacion_procesos.log"
         ruta_archivo = os.path.join(RUTA_CLASIFICACION_PROCESOS, nombre_archivo)
         os.makedirs(RUTA_CLASIFICACION_PROCESOS, exist_ok=True)
@@ -139,6 +140,8 @@ def abrir_archivo_clasificacion_procesos():
     nombre_archivo = 'Clasificacion_procesos.log'
     ruta_archivo_clasificacion = os.path.join(RUTA_CLASIFICACION_PROCESOS, nombre_archivo)
     os.startfile(ruta_archivo_clasificacion)
-ttk.Button(opc.gui.frame_monitor, text='Abrir clasificacion de procesos', command=abrir_archivo_clasificacion_procesos, style='OPC.TButton').pack()
+ttk.Label(opc.gui.frame_logs, text="", style='OPC.TLabel').pack()
+ttk.Label(opc.gui.frame_logs, text='Carpeta de logs clasificados', style='OPC.TLabel').pack()
+ttk.Button(opc.gui.frame_logs, text='Abrir', command=abrir_archivo_clasificacion_procesos, style='OPC.TButton').pack()
 
 opc.run() 
