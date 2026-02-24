@@ -53,12 +53,14 @@ class OPCGUI:
         self.frame_logs = ttk.Frame(self.notebook)
         self.frame_eliminar_basura = ttk.Frame(self.notebook)
         self.frame_automatizacion = ttk.Frame(self.notebook)
+        self.frame_extra = ttk.Frame(self.notebook)
 
         # Agregar pestañas
         self.notebook.add(self.frame_monitor, text='Inicio')
         self.notebook.add(self.frame_logs, text='Logs')
         self.notebook.add(self.frame_eliminar_basura, text='Limpieza')
         self.notebook.add(self.frame_automatizacion, text='Automatización')
+        self.notebook.add(self.frame_extra, text='Extra')
 
         # Labels principales (SIN .pack() encadenado)
         self.label_monitor = ttk.Label(
@@ -93,7 +95,14 @@ class OPCGUI:
         )
         self.label_automatizacion.pack(pady=20)
 
-
+        self.label_extra = ttk.Label(
+            self.frame_extra,
+            text='Extras',
+            style='OPC.TLabel',
+            font=('Segoe UI', 16)
+        )
+        self.label_extra.pack(pady=20)
+        
     # MÉTODOS PÚBLICOS
 
     def update_monitor(self, text):
