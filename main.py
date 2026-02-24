@@ -69,6 +69,12 @@ def loggear_actividad(origen, actividad):
         for entrada in momento_actividad:
             f.write(entrada + "\n")
 
+def abrir_actividad():
+    loggear_actividad('Usuario', 'Abrir historial de accion')
+    nombre_archivo = 'historial.log'
+    ruta_archivo = os.path.join(RUTA_HISTORIAL, nombre_archivo)
+    os.startfile(ruta_archivo)
+ttk.Button(opc.gui.frame_extra, text='Abrir historial', command=abrir_actividad, style='OPC.TButton').pack()
 # GENERACION DE LOGS Y SU CLASIFICACION.
 
 def logeo_procesos():
@@ -99,6 +105,8 @@ def logeo_procesos():
         procesos.sort(key=lambda p: p['cpu_percent'], reverse=True)
         for p in procesos:
             f.write(f"PID: {p['pid']:<8} | Name: {p['name'][:29]:<30} | CPU: {p['cpu_percent'] / psutil.cpu_count():<10.2f}% | RAM: {p['memory_percent']:<10.2f}%\n")
+    
+    opc_showinfo(opc.gui.frame_logs, BG,"Generacion de log", f"Log creado en la carpeta logs")
 def generar_log_procesos_thread():
     threading.Thread(target=logeo_procesos, daemon=True).start()
 ttk.Label(opc.gui.frame_logs, text='Log de procesos', style='OPC.TLabel').pack()
@@ -143,5 +151,11 @@ def abrir_archivo_clasificacion_procesos():
 ttk.Label(opc.gui.frame_logs, text="", style='OPC.TLabel').pack()
 ttk.Label(opc.gui.frame_logs, text='Carpeta de logs clasificados', style='OPC.TLabel').pack()
 ttk.Button(opc.gui.frame_logs, text='Abrir', command=abrir_archivo_clasificacion_procesos, style='OPC.TButton').pack()
+
+# Automatizacion 
+
+# ALERTA POR CONSUMO EXCESIVO.
+
+
 
 opc.run() 
