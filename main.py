@@ -113,9 +113,9 @@ ttk.Label(opc.gui.frame_logs, text='Log de procesos', style='OPC.TLabel').pack()
 ttk.Button(opc.gui.frame_logs, text='Generar log', command=generar_log_procesos_thread, style='OPC.TButton').pack()
 
 # Clasificacion de procesos.
-
+evento_clasificacion_procesos = threading.Event()
 def clasificar_procesos(intervalo=300):
-    while True:
+    while evento_clasificacion_procesos.is_set():
         procesos_cat_alta = []
         procesos_cat_media = []
         for clasificacion_procesos in Procesos.obtener_procesos(['pid', 'name', 'memory_percent', 'cpu_percent']):
@@ -138,10 +138,16 @@ def clasificar_procesos(intervalo=300):
             f.write(f"{datetime.now().strftime('%Y-%m-%d %H-%M-%S')} | Alta: {procesos_cat_alta} | Media: {procesos_cat_media}\n")
         time.sleep(intervalo)
 
-def actualizar_clasificacion_procesos():
-    hilo = threading.Thread(target=clasificar_procesos, daemon=True)
-    hilo.start()
-actualizar_clasificacion_procesos()
+estado_evento_clasificacion_procesos = tk.BooleanVar(value=False)
+def interruptor_clasificacion_procesos():
+    if estado_evento_clasificacion_procesos.get(): # activado
+        if not evento_clasificacion_procesos.set():
+            evento_clasificacion_procesos
+            hilo = threading.Thread(target=clasificar_procesos, daemon=True)
+            hilo.start()
+    else:
+        evento_clasificacion_procesos.clear() # apagado
+ttk.Checkbutton(opc.gui.frame_logs, text='Clasificacion de procesos (cada 5m)', variable=estado_evento_clasificacion_procesos, command=interruptor_clasificacion_procesos, style='OPC.TCheckbutton').pack()
 
 def abrir_archivo_clasificacion_procesos():
     loggear_actividad('Usuario', 'Abrio archivo de clasificacion de procesos')
