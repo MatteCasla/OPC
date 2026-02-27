@@ -3,7 +3,7 @@ import psutil
 class Monitoreo:
     @staticmethod
     def obtener_cpu():
-        return psutil.cpu_percent(interval=None)
+        return psutil.cpu_percent(interval=0.5)
     
     def cpu_cores():
         return psutil.cpu_count()
