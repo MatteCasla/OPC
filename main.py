@@ -155,7 +155,30 @@ ttk.Button(opc.gui.frame_logs, text='Abrir', command=abrir_archivo_clasificacion
 # Automatizacion 
 
 # ALERTA POR CONSUMO EXCESIVO.
+evento_alerta_consumo = threading.Event()
+def alerta_consumo():
+    while evento_alerta_consumo.is_set():
+        procesos_consumo_excesivo = {}
+        score_p = cpu * 0.5 + ram * 0.5
+        if score_p > 60:
+            procesos_obtenidos = Procesos.obtener_procesos()
+            for procesos_alto_consumo in procesos_obtenidos:
+                try: 
+                    if (procesos_alto_consumo['cpu_percent'] >= 60 or procesos_alto_consumo['memory_percent'] >= 60):
+                        procesos_consumo_excesivo[procesos_alto_consumo['pid']] = procesos_alto_consumo
+                except(psutil.NoSuchProcess, psutil.AccessDenied):
+                    pass
+                top_procesos = sorted(procesos_consumo_excesivo.values(), key=lambda procesos_obtenidos: (procesos_obtenidos['cpu_percent'] + procesos_obtenidos['memory_percent']), reverse=True)[:3]
+            opc_showinfo(opc.gui.frame_automatizacion, BG, 'alerta', f'Hay un proceso con un consumo elevado:{top_procesos}')
 
-
-
+estado_evento_alerta = tk.BooleanVar(value=False)
+def interruptor_alerta_consumo():
+    if estado_evento_alerta.get(): #ahi esta activado
+        if not evento_alerta_consumo.is_set():
+            evento_alerta_consumo.set()
+            hilo = threading.Thread(target=alerta_consumo, daemon=True)
+            hilo.start()
+    else:
+        evento_alerta_consumo.clear() #ahi esta apagado
+ttk.Checkbutton(opc.gui.frame_automatizacion, text='Alerta por consumo', variable=estado_evento_alerta, command=interruptor_alerta_consumo, style='OPC.TCheckbutton').pack()
 opc.run() 
