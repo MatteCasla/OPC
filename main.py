@@ -158,6 +158,105 @@ ttk.Label(opc.gui.frame_logs, text="", style='OPC.TLabel').pack()
 ttk.Label(opc.gui.frame_logs, text='Carpeta de logs clasificados', style='OPC.TLabel').pack()
 ttk.Button(opc.gui.frame_logs, text='Abrir', command=abrir_archivo_clasificacion_procesos, style='OPC.TButton').pack()
 
+# Limpieza de archivos.
+
+def limpiezaTEMP():
+    print("Carpeta TEMP:", RUTA_TEMP)
+    dirTEMP = os.listdir(RUTA_TEMP)
+    print("Archivos encontrados:", dirTEMP)
+
+    total_peso_temp = 0
+    contador_temp = 0
+    peso_eliminado_temp = 0
+
+    for dirpath, dirnames, filenames in os.walk(RUTA_TEMP):
+        for nombreArchivo_temp in filenames:
+            rutaArchivos_temp = os.path.join(dirpath, nombreArchivo_temp)
+            try:
+                obtenerTamano_temp = os.path.getsize(rutaArchivos_temp)
+                total_peso_temp += obtenerTamano_temp
+            except (OSError, PermissionError):
+                    pass
+
+
+    respuesta_askYN_temp = opc_askyesno(opc.gui.frame_eliminar_basura, BG,
+        "Confirmar",
+        "¿Desea eliminar los archivos temporales?"
+    )
+
+    if respuesta_askYN_temp:
+        for archivo_temp in os.listdir(RUTA_TEMP):
+            ruta_archivo_temp = os.path.join(RUTA_TEMP, archivo_temp)
+            try:
+                if os.path.isfile(ruta_archivo_temp):
+                    tamano_eliminar_temp = os.path.getsize(ruta_archivo_temp)
+                    os.remove(ruta_archivo_temp)  
+                    contador_temp += 1
+                    peso_eliminado_temp += tamano_eliminar_temp
+
+                elif os.path.isdir(ruta_archivo_temp):
+                    peso_carpetas_temp = 0
+                    for dp, dn, files in os.walk(ruta_archivo_temp):
+                        for f in files:
+                            try: 
+                                peso_carpetas_temp += os.path.getsize(os.path.join(dp, f))
+                            except(OSError, PermissionError):
+                                pass
+                    shutil.rmtree(ruta_archivo_temp)
+                    contador_temp += 1
+                    peso_eliminado_temp += peso_carpetas_temp
+            except Exception as e:
+                print("No se pudo borrar:", ruta_archivo_temp, e)
+
+        if contador_temp > 0:
+            opc_showinfo(opc.gui.frame_eliminar_basura, BG,'Listo', f'Se eliminaron {contador_temp} archivos temporales con un peso de {peso_eliminado_temp / (1024**2):.0f}MB')
+        else:
+            opc_showinfo(opc.gui.frame_eliminar_basura, BG,'Error permisos', f'Quedan un total de {total_peso_temp / (1024**2):.2f}MB que no podemos eliminar por falta de permisos.')
+        print("TEMP sigue existiendo:", os.path.exists(RUTA_TEMP))
+    else:
+        opc_showinfo(opc.gui.frame_eliminar_basura, BG,'Temp','No se eliminaron archivos.')
+
+ttk.Button(opc.gui.frame_eliminar_basura, text='Eliminar temp', command=limpiezaTEMP, style='OPC.TButton').pack()
+
+def eliminar_archivos_prefetch():
+    opc_showinfo(opc.gui.frame_eliminar_basura, BG, 'Advertencia', 'Abrir el archivo como administrador para poder utilizar esta funcion.')
+    ruta_prefetch = os.path.join(os.environ.get("SystemRoot", "C:\\Windows"), "Prefetch")
+
+    cantidad_archivos_prefetch = 0
+    archivos_prefetch_eliminados = 0
+
+    for nombre_prefetch in os.listdir(ruta_prefetch):
+        ruta_archivo_prefetch = os.path.join(ruta_prefetch, nombre_prefetch)
+        if os.path.isfile(ruta_archivo_prefetch):
+            cantidad_archivos_prefetch += 1
+
+    ask_yesno_archivos_prefetch = opc_askyesno(opc.gui.frame_eliminar_basura, BG,'Archivos prefetch', f'Se encontraron {cantidad_archivos_prefetch} archivos. ¿Desea eliminarlos?')
+
+    if ask_yesno_archivos_prefetch:
+        for archivo_prefetch in os.listdir(ruta_prefetch):
+            archivo_prefetch = os.path.join(ruta_prefetch, archivo_prefetch)
+            try:
+                if os.path.isfile(archivo_prefetch):
+                    if archivo_prefetch.lower().endswith(".pf"):
+                        os.remove(archivo_prefetch)
+                        archivos_prefetch_eliminados += 1
+            except Exception as e:
+                print("No se pudo borrar:", archivo_prefetch, e)
+        opc_showinfo(opc.gui.frame_eliminar_basura, BG,'Prefetch', f'Se eliminaron {archivos_prefetch_eliminados} archivos')
+    else:
+        opc_showinfo(opc.gui.frame_eliminar_basura, BG,'Prefetch','No se eliminaron archivos.')
+        
+ttk.Button(opc.gui.frame_eliminar_basura, text='Eliminar prefetch', command=eliminar_archivos_prefetch, style='OPC.TButton').pack()
+
+def vaciar_papelera_reciclaje():
+    respuesta_vaciar_papelera = opc_askyesno(opc.gui.frame_eliminar_basura, BG, 'Confirmacion', 'Estas seguro que deseas continuar con la eliminacion de archivos de la papelera de reciclaje?\n')
+    if respuesta_vaciar_papelera:
+        subprocess.run(['powershell', '-command', 'clear-recyclebin -force -ErrorAction SilentlyContinue'], shell=True)
+        opc_showinfo(opc.gui.frame_eliminar_basura, BG, 'Papelera de reciclaje', 'La papelera de reciclaje fue vaciada correctamente.')
+    else:
+        opc_showinfo(opc.gui.frame_eliminar_basura,BG, 'Papelera de reciclaje', 'No se eliminaron los elementos de la papelera de reciclaje')
+ttk.Button(opc.gui.frame_eliminar_basura, text='Eliminar papelera de reciclaje', command=vaciar_papelera_reciclaje, style='OPC.TButton').pack()
+
 # Automatizacion 
 
 # ALERTA POR CONSUMO EXCESIVO.
